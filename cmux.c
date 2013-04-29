@@ -199,8 +199,7 @@ int get_major(char *driver) {
 
 /**
 *	Creates nodes for the virtual TTYs
-*	Returns  the major number on success
-*			-1 on failure
+*	Returns the number of nodes created
 */
 int make_nodes(int major, char *basename, int number_nodes) {
 
