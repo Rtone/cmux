@@ -16,14 +16,28 @@ In order to activate the CMUX mode the program sends some AT commands. Theses co
 
 How to
 ------
-* In order to run this program you should have n_gsm module built for your linux kernel.
-	modprobe n_gsm
+* In order to run this program you should have `n_gsm` module built for your linux kernel and loaded. Use `modprobe n_gsm` to load it. If it fails you probably have to build the kernel module by yourself.
+* Change the defined options in `cmux.c` :
+	```c
+	/* serial port of the modem */
+	#define SERIAL_PORT	"/dev/ttyS1"
+	/* line speed */
+	#define LINE_SPEED	B115200
+	```
+* Change the AT commands set to fit your modem in `cmux.c`.
+* Make and run the program.
+	```
+	make
+	./cmux
+	```
 
-* Change the defined options
-* Change the AT commands set to fit your modem
-* Make and run the program
+It will create four devices :
+* /dev/ttyGSM1
+* /dev/ttyGSM2
+* /dev/ttyGSM3
+* /dev/ttyGSM4
 
-You should now be able to access your modem with four TTYs and use both ppp and AT commands as you want.
+You should now be able to access your modem with four TTYs and both use `ppp` and send AT commands to your modem.
 
 Links
 -----
