@@ -32,6 +32,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <err.h>
+#include <signal.h>
 /** 
 *	gsmmux.h provides n_gsm line dicipline structures and functions. 
 *	It should be kept in sync with your kernel release.
@@ -82,7 +83,7 @@
 *	0 : do not daemonize
 *	1 : daemonize
 */
-#define DAEMONIZE	1
+#define DAEMONIZE	0
 
  /* size of the reception buffer which gets data from the serial line */
 #define SIZE_BUF	256
@@ -154,6 +155,13 @@ int send_at_command(int serial_fd, char *command) {
 	
 	return -1;		
 
+}
+
+/**
+*	Function raised by signal catching
+*/
+void signal_callback_handler(int signum) {
+	return;
 }
 
 /**
@@ -250,6 +258,7 @@ void remove_nodes(char *basename, int number_nodes) {
 		sprintf(node_name, "%s%d", basename, node);
 			
 		/* unlink the actual character node */
+		dbg("Removing %s", node_name);
 		if (unlink(node_name) == -1)
 			warn("Cannot remove %s", node_name);
 
@@ -350,7 +359,9 @@ int main(void) {
 			err(EXIT_FAILURE, "Cannot daemonize");
 	}
 
-	/* wait to keep the line discipline enabled, wake it up with any signal */
+	/* wait to keep the line discipline enabled, wake it up with a signal */
+	signal(SIGINT, signal_callback_handler);
+	signal(SIGTERM, signal_callback_handler);
 	pause();
 	
 	/* remove the created virtual TTYs */
