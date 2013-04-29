@@ -55,6 +55,9 @@
 /* line speed */
 #define LINE_SPEED	B115200
 
+/* maximum transfert unit (MTU), value in bytes */
+#define MTU	512
+
 /**
 * whether or not to create virtual TTYs for the multiplex
 *	0 : do not create
@@ -83,7 +86,7 @@
 *	0 : do not daemonize
 *	1 : daemonize
 */
-#define DAEMONIZE	0
+#define DAEMONIZE	1
 
  /* size of the reception buffer which gets data from the serial line */
 #define SIZE_BUF	256
@@ -273,6 +276,7 @@ int main(void) {
 	struct termios tio;
 	int ldisc = N_GSM0710;
 	struct gsm_config gsm;
+	char atcommand[40];
 
 	/* print global parameters */
 	dbg("SERIAL_PORT = %s", SERIAL_PORT);
@@ -317,7 +321,8 @@ int main(void) {
 		warnx("AT: bad response");
 	if (send_at_command(serial_fd, "AT+IPR=115200&w\r") == -1)
 		errx(EXIT_FAILURE, "AT+IPR=115200&w: bad response");
-	if (send_at_command(serial_fd, "AT+CMUX=0,0,5,512,10,3,30,10,2\r") == -1)
+	sprintf(atcommand, "AT+CMUX=0,0,5,%d,10,3,30,10,2\r", MTU);
+	if (send_at_command(serial_fd, atcommand) == -1)
 		errx(EXIT_FAILURE, "Cannot enable modem CMUX");
 
 	/* use n_gsm line discipline */
@@ -332,8 +337,8 @@ int main(void) {
 	/* set and write new attributes */
 	gsm.initiator = 1;
 	gsm.encapsulation = 0;
-	gsm.mru = 512;
-	gsm.mtu = 512;
+	gsm.mru = MTU;
+	gsm.mtu = MTU;
 	gsm.t1 = 10;
 	gsm.n2 = 3;
 	gsm.t2 = 30;
