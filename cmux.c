@@ -86,7 +86,7 @@
 *	0 : do not daemonize
 *	1 : daemonize
 */
-#define DAEMONIZE	0
+#define DAEMONIZE	1
 
  /* size of the reception buffer which gets data from the serial line */
 #define SIZE_BUF	256
