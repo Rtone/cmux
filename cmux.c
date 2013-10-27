@@ -50,7 +50,7 @@
 #endif
 
 /* serial port of the modem */
-#define SERIAL_PORT	"/dev/ttyS1"
+#define SERIAL_PORT	"/dev/ttyAPP0"
 
 /* line speed */
 #define LINE_SPEED	B115200
@@ -86,7 +86,7 @@
 *	0 : do not daemonize
 *	1 : daemonize
 */
-#define DAEMONIZE	1
+#define DAEMONIZE	0
 
  /* size of the reception buffer which gets data from the serial line */
 #define SIZE_BUF	256
@@ -313,20 +313,24 @@ int main(void) {
 	*	to fit your modem needs.
 	*	The following matches Quectel M95.
 	*/
+	if (send_at_command(serial_fd, "AAAT\r") == -1)
+		errx(EXIT_FAILURE, "AAAAT: bad response");
+
 	if (send_at_command(serial_fd, "AT+IFC=2,2\r") == -1)
 		errx(EXIT_FAILURE, "AT+IFC=2,2: bad response");	
 	if (send_at_command(serial_fd, "AT+GMM\r") == -1)
 		warnx("AT+GMM: bad response");
 	if (send_at_command(serial_fd, "AT\r") == -1)
 		warnx("AT: bad response");
-	if (send_at_command(serial_fd, "AT+IPR=115200&w\r") == -1)
-		errx(EXIT_FAILURE, "AT+IPR=115200&w: bad response");
-	sprintf(atcommand, "AT+CMUX=0,0,5,%d,10,3,30,10,2\r", MTU);
+//	if (send_at_command(serial_fd, "AT+IPR=115200&w\r") == -1)
+//		errx(EXIT_FAILURE, "AT+IPR=115200&w: bad response");
+//	sprintf(atcommand, "AT+CMUX=0,0,5,%d,10,3,30,10,2\r", MTU);
+	sprintf(atcommand, "AT+CMUX=0\r");
 	if (send_at_command(serial_fd, atcommand) == -1)
 		errx(EXIT_FAILURE, "Cannot enable modem CMUX");
 
 	/* use n_gsm line discipline */
-	sleep(2);
+	sleep(0.1);
 	if (ioctl(serial_fd, TIOCSETD, &ldisc) < 0)
 		err(EXIT_FAILURE, "Cannot set line dicipline. Is 'n_gsm' module registred?");
 
