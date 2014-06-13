@@ -56,7 +56,7 @@
 #define LINE_SPEED	B115200
 
 /* maximum transfert unit (MTU), value in bytes */
-#define MTU	512
+#define MTU	255
 
 /**
 * whether or not to create virtual TTYs for the multiplex
