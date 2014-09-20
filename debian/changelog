@@ -1,0 +1,5 @@
+cmux (1.0) stable; urgency=medium
+
+  * Initial release. (https://github.com/contactless/cmux/)
+
+ -- Evgeny Boger <boger@contactless.ru>  Sat, 20 Sep 2014 04:29:51 +0400

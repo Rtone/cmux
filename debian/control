@@ -1,0 +1,11 @@
+Source: cmux
+Maintainer: Evgeny Boger <boger@contactless.ru>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 9)
+
+Package: cmux
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enables GSM 0710 multiplex using n_gsm line dicipline
