@@ -1,3 +1,9 @@
+cmux (1.1) stable; urgency=medium
+
+  * fix MTU setting. MTU set to 255 (maximum allowed for SIM900)
+
+ -- Evgeny Boger <boger@contactless.ru>  Thu, 19 Feb 2015 21:03:32 +0300
+
 cmux (1.0) stable; urgency=medium
 
   * Initial release. (https://github.com/contactless/cmux/)

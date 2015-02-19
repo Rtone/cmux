@@ -33,8 +33,8 @@
 #include <unistd.h>
 #include <err.h>
 #include <signal.h>
-/** 
-*	gsmmux.h provides n_gsm line dicipline structures and functions. 
+/**
+*	gsmmux.h provides n_gsm line dicipline structures and functions.
 *	It should be kept in sync with your kernel release.
 */
 #include "gsmmux.h"
@@ -96,7 +96,7 @@
 *	Prints debug messages to stderr if debug is wanted
 */
 static void dbg(char *fmt, ...) {
-	
+
 	va_list args;
 
 	if (DEBUG) {
@@ -116,14 +116,14 @@ static void dbg(char *fmt, ...) {
 *			-1 on failure
 */
 int send_at_command(int serial_fd, char *command) {
-	
+
 	char buf[SIZE_BUF];
 	int r;
 
 	/* write the AT command to the serial line */
 	if (write(serial_fd, command, strlen(command)) <= 0)
 		err(EXIT_FAILURE, "Cannot write to %s", SERIAL_PORT);
-	
+
 	/* wait a bit to allow the modem to rest */
 	sleep(1);
 
@@ -132,7 +132,7 @@ int send_at_command(int serial_fd, char *command) {
 	r = read(serial_fd, buf, sizeof(buf));
 	if (r == -1)
 		err(EXIT_FAILURE, "Cannot read %s", SERIAL_PORT);
-	
+
 	/* if there is no result from the modem, return failure */
 	if (r == 0) {
 		dbg("%s\t: No response", command);
@@ -155,8 +155,8 @@ int send_at_command(int serial_fd, char *command) {
 	if (strstr(buf, "OK\r") != NULL) {
 		return 0;
 	}
-	
-	return -1;		
+
+	return -1;
 
 }
 
@@ -180,20 +180,20 @@ int get_major(char *driver) {
 	ssize_t read;
 	char device[20];
 	int major = -1;
-	
+
 	/* open /proc/devices file */
 	if ((fp = fopen("/proc/devices", "r")) == NULL)
 		err(EXIT_FAILURE, "Cannot open /proc/devices");
 
 	/* read the file line by line */
 	while ((major == -1) && (read = getline(&line, &len, fp)) != -1) {
-		
+
 		/* if the driver name string is found in the line, try to get the major */
 		if (strstr(line, driver) != NULL) {
 			if (sscanf(line,"%d %s\n", &major, device) != 2)
 				major = -1;
 		}
-		
+
 		/* free the line before getting a new one */
 		if (line) {
 			free(line);
@@ -226,10 +226,10 @@ int make_nodes(int major, char *basename, int number_nodes) {
 
 		/* append the minor number to the base name */
 		sprintf(node_name, "%s%d", basename, minor);
-		
+
 		/* store a device info with major and minor */
 		device = makedev(major, minor);
-		
+
 		/* create the actual character node */
 		if (mknod(node_name, S_IFCHR | 0666, device) != 0) {
 			warn("Cannot create %s", node_name);
@@ -259,7 +259,7 @@ void remove_nodes(char *basename, int number_nodes) {
 
 		/* append the minor number to the base name */
 		sprintf(node_name, "%s%d", basename, node);
-			
+
 		/* unlink the actual character node */
 		dbg("Removing %s", node_name);
 		if (unlink(node_name) == -1)
@@ -285,11 +285,11 @@ int main(void) {
 	serial_fd = open(SERIAL_PORT, O_RDWR | O_NOCTTY | O_NDELAY);
 	if (serial_fd == -1)
 		err(EXIT_FAILURE, "Cannot open %s", SERIAL_PORT);
-	
+
 	/* get the current attributes of the serial port */
 	if (tcgetattr(serial_fd, &tio) == -1)
 		err(EXIT_FAILURE, "Cannot get line attributes");
-	
+
 	/* set the new attrbiutes */
 	tio.c_iflag = 0;
 	tio.c_oflag = 0;
@@ -298,18 +298,18 @@ int main(void) {
 	tio.c_lflag = 0;
 	tio.c_cc[VMIN] = 1;
 	tio.c_cc[VTIME] = 0;
-	
+
 	/* write the speed of the serial line */
 	if (cfsetospeed(&tio, LINE_SPEED) < 0 || cfsetispeed(&tio, LINE_SPEED) < 0)
 		err(EXIT_FAILURE, "Cannot set line speed");
-	
+
 	/* write the attributes */
 	if (tcsetattr(serial_fd, TCSANOW, &tio) == -1)
 		err(EXIT_FAILURE, "Cannot set line attributes");
 
 	/**
 	*	Send AT commands to put the modem in CMUX mode.
-	*	This is vendor specific and should be changed 
+	*	This is vendor specific and should be changed
 	*	to fit your modem needs.
 	*	The following matches Quectel M95.
 	*/
@@ -317,15 +317,17 @@ int main(void) {
 		errx(EXIT_FAILURE, "AAAAT: bad response");
 
 	if (send_at_command(serial_fd, "AT+IFC=2,2\r") == -1)
-		errx(EXIT_FAILURE, "AT+IFC=2,2: bad response");	
+		errx(EXIT_FAILURE, "AT+IFC=2,2: bad response");
 	if (send_at_command(serial_fd, "AT+GMM\r") == -1)
 		warnx("AT+GMM: bad response");
 	if (send_at_command(serial_fd, "AT\r") == -1)
 		warnx("AT: bad response");
 //	if (send_at_command(serial_fd, "AT+IPR=115200&w\r") == -1)
 //		errx(EXIT_FAILURE, "AT+IPR=115200&w: bad response");
-//	sprintf(atcommand, "AT+CMUX=0,0,5,%d,10,3,30,10,2\r", MTU);
-	sprintf(atcommand, "AT+CMUX=0\r");
+
+    // Set CMUX options: port_speed=115200, frame_size=MTU
+	sprintf(atcommand, "AT+CMUX=0,0,5,%d,10,3,30,10,2\r", MTU);
+
 	if (send_at_command(serial_fd, atcommand) == -1)
 		errx(EXIT_FAILURE, "Cannot enable modem CMUX");
 
@@ -351,7 +353,7 @@ int main(void) {
 	if (ioctl(serial_fd, GSMIOC_SETCONF, &gsm) < 0)
 		err(EXIT_FAILURE, "Cannot set GSM multiplex parameters");
 	dbg("Line dicipline set");
-	
+
 	/* create the virtual TTYs */
 	if (CREATE_NODES) {
 		int created;
@@ -372,7 +374,7 @@ int main(void) {
 	signal(SIGINT, signal_callback_handler);
 	signal(SIGTERM, signal_callback_handler);
 	pause();
-	
+
 	/* remove the created virtual TTYs */
 	if (CREATE_NODES) {
 		remove_nodes(BASENAME_NODES, NUM_NODES);
