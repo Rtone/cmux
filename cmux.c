@@ -2,7 +2,7 @@
 *	Cmux
 *	Enables GSM 0710 multiplex using n_gsm
 *
-*	Copyright (C) 2013 - Rtone - Nicolas Le Manchet <nicolaslm@rtone.fr>
+*	Copyright (C) 2013 - Rtone - Nicolas Le Manchet <nicolaslm@rtone.fr> and others
 *
 *	This program is free software: you can redistribute it and/or modify
 *	it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <err.h>
 #include <signal.h>
+#include <ctype.h>
 /**
 *	gsmmux.h provides n_gsm line dicipline structures and functions.
 *	It should be kept in sync with your kernel release.
@@ -49,57 +50,50 @@
 # define TIOCSETD	0x5423
 #endif
 
-/* serial port of the modem */
-#define SERIAL_PORT	"/dev/ttyAPP0"
+ /* size of the reception buffer which gets data from the serial line */
+#define SIZE_BUF	256
 
-/* line speed */
-#define LINE_SPEED	B115200
-
-/* maximum transfert unit (MTU), value in bytes */
-#define MTU	255
-
-/**
-* whether or not to create virtual TTYs for the multiplex
-*	0 : do not create
-*	1 : create
-*/
-#define CREATE_NODES	1
+char *g_gsm = "default";
 
 /* number of virtual TTYs to create (most modems can handle up to 4) */
-#define NUM_NODES	4
+int g_nodes = 1;
 
 /* name of the virtual TTYs to create */
-#define BASENAME_NODES	"/dev/ttyGSM"
+char *g_base = "/dev/ttyGSM";
 
 /* name of the driver, used to get the major number */
-#define DRIVER_NAME	"gsmtty"
-
-/**
-* whether or not to print debug messages to stderr
-*	0 : debug off
-*	1 : debug on
-*/
-#define DEBUG	1
+char *g_driver = "gsmtty";
 
 /**
 * whether or not to detach the program from the terminal
 *	0 : do not daemonize
 *	1 : daemonize
 */
-#define DAEMONIZE	1
+int g_daemon = 1;
 
- /* size of the reception buffer which gets data from the serial line */
-#define SIZE_BUF	256
+/**
+* whether or not to print debug messages to stderr
+*	0 : debug off
+*	1 : debug on
+*/
+int g_debug = 1;
 
+/* serial port of the modem */
+char *g_device = "/dev/ttyUSB0";
+
+/* line speed */
+int g_speed = 115200;
+
+/* maximum transfert unit (MTU), value in bytes */
+int g_mtu = 512;
 
 /**
 *	Prints debug messages to stderr if debug is wanted
 */
 static void dbg(char *fmt, ...) {
-
 	va_list args;
 
-	if (DEBUG) {
+	if (g_debug) {
 		fflush(NULL);
 		va_start(args, fmt);
 		vfprintf(stderr, fmt, args);
@@ -116,13 +110,12 @@ static void dbg(char *fmt, ...) {
 *			-1 on failure
 */
 int send_at_command(int serial_fd, char *command) {
-
 	char buf[SIZE_BUF];
 	int r;
 
 	/* write the AT command to the serial line */
 	if (write(serial_fd, command, strlen(command)) <= 0)
-		err(EXIT_FAILURE, "Cannot write to %s", SERIAL_PORT);
+		err(EXIT_FAILURE, "Cannot write to %s", g_device);
 
 	/* wait a bit to allow the modem to rest */
 	sleep(1);
@@ -131,7 +124,7 @@ int send_at_command(int serial_fd, char *command) {
 	memset(buf, 0, sizeof(buf));
 	r = read(serial_fd, buf, sizeof(buf));
 	if (r == -1)
-		err(EXIT_FAILURE, "Cannot read %s", SERIAL_PORT);
+		err(EXIT_FAILURE, "Cannot read %s", g_device);
 
 	/* if there is no result from the modem, return failure */
 	if (r == 0) {
@@ -140,7 +133,7 @@ int send_at_command(int serial_fd, char *command) {
 	}
 
 	/* if we have a result and want debug info, strip CR & LF out from the output */
-	if (DEBUG) {
+	if (g_debug) {
 		int i;
 		char bufp[SIZE_BUF];
 		memcpy(bufp, buf, sizeof(buf));
@@ -157,7 +150,6 @@ int send_at_command(int serial_fd, char *command) {
 	}
 
 	return -1;
-
 }
 
 /**
@@ -173,7 +165,6 @@ void signal_callback_handler(int signum) {
 *			-1 on failure
 */
 int get_major(char *driver) {
-
 	FILE *fp;
 	char *line = NULL;
 	size_t len = 0;
@@ -199,7 +190,6 @@ int get_major(char *driver) {
 			free(line);
 			line = NULL;
 		}
-
 	}
 
 	/* close /proc/devices file */
@@ -213,7 +203,6 @@ int get_major(char *driver) {
 *	Returns the number of nodes created
 */
 int make_nodes(int major, char *basename, int number_nodes) {
-
 	int minor, created = 0;
 	dev_t device;
 	char node_name[15];
@@ -237,7 +226,6 @@ int make_nodes(int major, char *basename, int number_nodes) {
 			created++;
 			dbg("Created %s", node_name);
 		}
-
 	}
 
 	/* revert the mask to the old one */
@@ -251,9 +239,8 @@ int make_nodes(int major, char *basename, int number_nodes) {
 *	Returns nothing, it doesn't really matter if it fails
 */
 void remove_nodes(char *basename, int number_nodes) {
-
-	int node;
 	char node_name[15];
+	int node;
 
 	for (node=1; node<number_nodes+1; node++) {
 
@@ -264,27 +251,162 @@ void remove_nodes(char *basename, int number_nodes) {
 		dbg("Removing %s", node_name);
 		if (unlink(node_name) == -1)
 			warn("Cannot remove %s", node_name);
-
 	}
 
 	return;
 }
 
-int main(void) {
+int match(const char *arg, const char *opt) {
+	return (arg == opt) || (arg && (strcmp(arg, opt) == 0));
+}
 
-	int serial_fd, major;
+int parse_num(char *str, const char *opt) {
+	char* end = NULL;
+	int n = strtol(str, &end, 10);
+	if (*end || n < 0)
+		errx(EXIT_FAILURE, "Invalid number for option %s: %s", opt, str);
+
+	return n;
+}
+
+char* parse_string(char *str, const char *opt) {
+	if (str == NULL)
+		errx(EXIT_FAILURE, "Argument missing for option %s", opt);
+
+	return str;
+}
+
+int handle_string_arg(char **args, char**val, const char *opt) {
+	if (match(args[0], opt)) {
+		*val = parse_string(args[1], opt);
+		return 1;
+	}
+	return 0;
+}
+
+int handle_number_arg(char **args, int *val, const char *opt) {
+	if (match(args[0], opt)) {
+		char *str = parse_string(args[1], opt);
+		*val = parse_num(str, opt);
+		return 1;
+	}
+	return 0;
+}
+
+void print_help() {
+	printf(
+		"Usage: cmux --device /dev/ttyUSB0 --speed 115200\n\n"
+		"--gsm <type>	SIM900, TELIT or default. (Default: %s)\n"
+		"--device <name>	Serial device name. (Default: %s)\n"
+		"--speed <rate>	Serial device line speed. (Default: %d)\n"
+		"--mtu <number>	MTU size. (Default: %d)\n"
+		"--debug [1|0]	Enable debugging. (Default: %d)\n"
+		"--daemon [1|0]	Fork into background. (Default: %d)\n"
+		"--driver <name>	Driver to use. (Default: %s)\n"
+		"--base <name>	Base name for the nodes. (Default: %s)\n"
+		"--nodes [0-4]	Number of nodes to create. (Default: %d)\n"
+		"\n",
+		g_gsm, g_device, g_speed, g_mtu, g_debug,
+		g_daemon, g_driver, g_base, g_nodes
+	);
+}
+
+int to_line_speed(int speed) {
+	switch(speed) {
+		case 2400: return B2400;
+		case 4800: return B4800;
+		case 9600: return B9600;
+		case 19200: return B19200;
+		case 38400: return B38400;
+		case 57600: return B57600;
+		case 115200: return B115200;
+		default:
+			errx(EXIT_FAILURE, "Invalid value for speed: %d", speed);
+	}
+}
+
+// string lower case
+char *to_lower(const char *str) {
+    int i;
+
+	if(str == NULL)
+		return NULL;
+
+	char *s = strdup(str);
+    for (i = 0; i < strlen(s); ++i) {
+		s[i] = tolower(s[i]);
+	}
+
+	return s;
+}
+
+int main(int argc, char **argv) {
+	int serial_fd, major, speed, i;
 	struct termios tio;
 	int ldisc = N_GSM0710;
 	struct gsm_config gsm;
 	char atcommand[40];
 
+	for (i = 1; i < argc; ++i) {
+		char **args = &argv[i];
+
+		if (match(args[0], "-h")) {
+			print_help();
+			return 0;
+		}
+
+		if(handle_string_arg(args, &g_gsm, "--gsm")
+			|| handle_string_arg(args, &g_device, "--device")
+			|| handle_number_arg(args, &g_speed, "--speed")
+			|| handle_number_arg(args, &g_mtu, "--mtu")
+			|| handle_number_arg(args, &g_debug, "--debug")
+			|| handle_number_arg(args, &g_daemon, "--daemon")
+			|| handle_number_arg(args, &g_nodes, "--nodes")
+			|| handle_string_arg(args, &g_driver, "--driver")
+			|| handle_string_arg(args, &g_base, "--base")) {
+				i++;
+		} else {
+			errx(EXIT_FAILURE, "Unknown argument: %s", args[0]);
+		}
+	};
+
+	if(g_daemon != 0 && g_daemon != 1)
+		errx(EXIT_FAILURE, "Invalid value for --daemon: %d", g_daemon);
+
+	if(g_debug != 0 && g_debug != 1)
+		errx(EXIT_FAILURE, "Invalid value for --debug: %d", g_debug);
+
+	if(g_nodes > 4)
+		errx(EXIT_FAILURE, "Invalid value for --nodes: %d", g_nodes);
+
+	speed = to_line_speed(g_speed);
+	g_gsm = to_lower(g_gsm);
+
+	if (match(g_gsm, "sim900")) {
+		g_mtu = 255;
+	} else {
+		g_mtu = 512;
+	}
+
 	/* print global parameters */
-	dbg("SERIAL_PORT = %s", SERIAL_PORT);
+	dbg(
+		"gsm: %s\n"
+		"device: %s\n"
+		"speed: %d\n"
+		"mtu: %d\n"
+		"debug: %d\n"
+		"daemon: %d\n"
+		"driver: %s\n"
+		"base: %s\n"
+		"nodes: %d\n",
+		g_gsm, g_device, g_speed, g_mtu, g_debug,
+		g_daemon, g_driver, g_nodes ? g_base : "disabled", g_nodes
+	);
 
 	/* open the serial port */
-	serial_fd = open(SERIAL_PORT, O_RDWR | O_NOCTTY | O_NDELAY);
+	serial_fd = open(g_device, O_RDWR | O_NOCTTY | O_NDELAY);
 	if (serial_fd == -1)
-		err(EXIT_FAILURE, "Cannot open %s", SERIAL_PORT);
+		err(EXIT_FAILURE, "Cannot open %s", g_device);
 
 	/* get the current attributes of the serial port */
 	if (tcgetattr(serial_fd, &tio) == -1)
@@ -300,7 +422,7 @@ int main(void) {
 	tio.c_cc[VTIME] = 0;
 
 	/* write the speed of the serial line */
-	if (cfsetospeed(&tio, LINE_SPEED) < 0 || cfsetispeed(&tio, LINE_SPEED) < 0)
+	if (cfsetospeed(&tio, speed) < 0 || cfsetispeed(&tio, speed) < 0)
 		err(EXIT_FAILURE, "Cannot set line speed");
 
 	/* write the attributes */
@@ -313,26 +435,55 @@ int main(void) {
 	*	to fit your modem needs.
 	*	The following matches Quectel M95.
 	*/
-	if (send_at_command(serial_fd, "AAAT\r") == -1)
-		errx(EXIT_FAILURE, "AAAAT: bad response");
 
-	if (send_at_command(serial_fd, "AT+IFC=2,2\r") == -1)
-		errx(EXIT_FAILURE, "AT+IFC=2,2: bad response");
-	if (send_at_command(serial_fd, "AT+GMM\r") == -1)
-		warnx("AT+GMM: bad response");
-	if (send_at_command(serial_fd, "AT\r") == -1)
-		warnx("AT: bad response");
-//	if (send_at_command(serial_fd, "AT+IPR=115200&w\r") == -1)
-//		errx(EXIT_FAILURE, "AT+IPR=115200&w: bad response");
+	if (match(g_gsm, "sim900")) {
+		if (send_at_command(serial_fd, "AAAT\r") == -1)
+			errx(EXIT_FAILURE, "AAAAT: bad response");
+	}
 
-    // Set CMUX options: port_speed=115200, frame_size=MTU
-	sprintf(atcommand, "AT+CMUX=0,0,5,%d,10,3,30,10,2\r", MTU);
+	if (match(g_gsm, "telit")) {
+		if (send_at_command(serial_fd, "AT#SELINT=2\r") == -1)
+			errx(EXIT_FAILURE, "AT#SELINT=2: bad response");
 
-	if (send_at_command(serial_fd, atcommand) == -1)
-		errx(EXIT_FAILURE, "Cannot enable modem CMUX");
+		if (send_at_command(serial_fd, "ATE0V1&K3&D2\r") == -1)
+			errx(EXIT_FAILURE, "ATE0V1&K3&D2: bad response");
+
+		sprintf(atcommand, "AT+IPR=%d\r", g_speed);
+		if (send_at_command(serial_fd, atcommand) == -1)
+			errx(EXIT_FAILURE, "AT+IPR=%d: bad response", g_speed);
+
+		if (send_at_command(serial_fd, "AT#CMUXMODE=0\r") == -1)
+			errx(EXIT_FAILURE, "AT#CMUXMODE=0: bad response");
+
+		(void)send_at_command(serial_fd, "AT+CMUX=0\r");
+	} else {
+		if (send_at_command(serial_fd, "AT+IFC=2,2\r") == -1)
+			errx(EXIT_FAILURE, "AT+IFC=2,2: bad response");
+
+		if (send_at_command(serial_fd, "AT+GMM\r") == -1)
+			warnx("AT+GMM: bad response");
+
+		if (send_at_command(serial_fd, "AT\r") == -1)
+			warnx("AT: bad response");
+
+		if (!match(g_gsm, "sim900")) {
+			sprintf(atcommand, "AT+IPR=%d&w\r", g_speed);
+			if (send_at_command(serial_fd, atcommand) == -1)
+				errx(EXIT_FAILURE, "AT+IPR=%d&w: bad response", g_speed);
+		}
+
+		sprintf(atcommand, "AT+CMUX=0,0,5,%d,10,3,30,10,2\r", g_mtu);
+		if (send_at_command(serial_fd, atcommand) == -1)
+			errx(EXIT_FAILURE, "Cannot enable modem CMUX");
+	}
 
 	/* use n_gsm line discipline */
-	sleep(0.1);
+	if (match(g_gsm, "sim900")) {
+		sleep(0.1);
+	} else {
+		sleep(2);
+	}
+
 	if (ioctl(serial_fd, TIOCSETD, &ldisc) < 0)
 		err(EXIT_FAILURE, "Cannot set line dicipline. Is 'n_gsm' module registred?");
 
@@ -343,8 +494,8 @@ int main(void) {
 	/* set and write new attributes */
 	gsm.initiator = 1;
 	gsm.encapsulation = 0;
-	gsm.mru = MTU;
-	gsm.mtu = MTU;
+	gsm.mru = g_mtu;
+	gsm.mtu = g_mtu;
 	gsm.t1 = 10;
 	gsm.n2 = 3;
 	gsm.t2 = 30;
@@ -355,16 +506,16 @@ int main(void) {
 	dbg("Line dicipline set");
 
 	/* create the virtual TTYs */
-	if (CREATE_NODES) {
+	if (g_nodes > 0) {
 		int created;
-		if ((major = get_major(DRIVER_NAME)) < 0)
+		if ((major = get_major(g_driver)) < 0)
 			errx(EXIT_FAILURE, "Cannot get major number");
-		if ((created = make_nodes(major, BASENAME_NODES, NUM_NODES)) < NUM_NODES)
-			warnx("Cannot create all nodes, only %d/%d have been created.", created, NUM_NODES);
+		if ((created = make_nodes(major, g_base, g_nodes)) < g_nodes)
+			warnx("Cannot create all nodes, only %d/%d have been created.", created, g_nodes);
 	}
 
 	/* detach from the terminal if needed */
-	if (DAEMONIZE) {
+	if (g_daemon) {
 		dbg("Going to background");
 		if (daemon(0,0) != 0)
 			err(EXIT_FAILURE, "Cannot daemonize");
@@ -376,8 +527,8 @@ int main(void) {
 	pause();
 
 	/* remove the created virtual TTYs */
-	if (CREATE_NODES) {
-		remove_nodes(BASENAME_NODES, NUM_NODES);
+	if (g_nodes > 0) {
+		remove_nodes(g_base, g_nodes);
 	}
 
 	/* close the serial line */
