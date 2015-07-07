@@ -57,3 +57,7 @@ You should now be able to access your modem with four TTYs and both use `ppp` an
 Links
 -----
 This program is mainly an actual implementation of [GSM 0710 tty multiplexor HOWTO](http://stuff.mit.edu/afs/sipb/contrib/linux/Documentation/serial/n_gsm.txt)
+
+License
+-----
+CC0
