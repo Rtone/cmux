@@ -36,8 +36,6 @@ Usage: cmux --device /dev/ttyUSB0 --speed 115200
 --driver <name>	Driver to use. (Default: gsmtty)
 --base <name>	Base name for the nodes. (Default: /dev/ttyGSM)
 --nodes [0-4]	Number of nodes to create. (Default: 1)
-
-Usage: cmux --device /dev/ttyUSB0 --speed 115200
 ```
 
 * Change the AT commands set to fit your modem in `cmux.c`.
