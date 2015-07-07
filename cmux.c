@@ -137,7 +137,7 @@ int send_at_command(int serial_fd, char *command) {
 		int i;
 		char bufp[SIZE_BUF];
 		memcpy(bufp, buf, sizeof(buf));
-		for(i=0; i<strlen(bufp); i++) {
+		for (i=0; i<strlen(bufp); i++) {
 			if (bufp[i] == '\r' || bufp[i] == '\n')
 				bufp[i] = ' ';
 		}
@@ -329,7 +329,7 @@ int to_line_speed(int speed) {
 char *to_lower(const char *str) {
 	int i;
 
-	if(str == NULL)
+	if (str == NULL)
 		return NULL;
 
 	char *s = strdup(str);
@@ -355,7 +355,7 @@ int main(int argc, char **argv) {
 			return 0;
 		}
 
-		if(handle_string_arg(args, &g_gsm, "--gsm")
+		if (handle_string_arg(args, &g_gsm, "--gsm")
 			|| handle_string_arg(args, &g_device, "--device")
 			|| handle_number_arg(args, &g_speed, "--speed")
 			|| handle_number_arg(args, &g_mtu, "--mtu")
@@ -373,16 +373,16 @@ int main(int argc, char **argv) {
 	speed = to_line_speed(g_speed);
 	g_gsm = to_lower(g_gsm);
 
-	if(strcmp(g_gsm, "default") && strcmp(g_gsm, "sim900") && strcmp(g_gsm, "telit"))
+	if (strcmp(g_gsm, "default") && strcmp(g_gsm, "sim900") && strcmp(g_gsm, "telit"))
 		errx(EXIT_FAILURE, "Invalid value for --gsm: %s", g_gsm);
 
-	if(g_daemon != 0 && g_daemon != 1)
+	if (g_daemon != 0 && g_daemon != 1)
 		errx(EXIT_FAILURE, "Invalid value for --daemon: %d", g_daemon);
 
-	if(g_debug != 0 && g_debug != 1)
+	if (g_debug != 0 && g_debug != 1)
 		errx(EXIT_FAILURE, "Invalid value for --debug: %d", g_debug);
 
-	if(g_nodes > 4)
+	if (g_nodes > 4)
 		errx(EXIT_FAILURE, "Invalid value for --nodes: %d", g_nodes);
 
 	if (match(g_gsm, "sim900")) {
