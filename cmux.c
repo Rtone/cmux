@@ -370,6 +370,12 @@ int main(int argc, char **argv) {
 		}
 	};
 
+	speed = to_line_speed(g_speed);
+	g_gsm = to_lower(g_gsm);
+
+	if(strcmp(g_gsm, "default") && strcmp(g_gsm, "sim900") && strcmp(g_gsm, "telit"))
+		errx(EXIT_FAILURE, "Invalid value for --gsm: %s", g_gsm);
+
 	if(g_daemon != 0 && g_daemon != 1)
 		errx(EXIT_FAILURE, "Invalid value for --daemon: %d", g_daemon);
 
@@ -378,9 +384,6 @@ int main(int argc, char **argv) {
 
 	if(g_nodes > 4)
 		errx(EXIT_FAILURE, "Invalid value for --nodes: %d", g_nodes);
-
-	speed = to_line_speed(g_speed);
-	g_gsm = to_lower(g_gsm);
 
 	if (match(g_gsm, "sim900")) {
 		g_mtu = 255;
