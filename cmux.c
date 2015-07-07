@@ -327,13 +327,13 @@ int to_line_speed(int speed) {
 
 // string lower case
 char *to_lower(const char *str) {
-    int i;
+	int i;
 
 	if(str == NULL)
 		return NULL;
 
 	char *s = strdup(str);
-    for (i = 0; i < strlen(s); ++i) {
+	for (i = 0; i < strlen(s); ++i) {
 		s[i] = tolower(s[i]);
 	}
 
