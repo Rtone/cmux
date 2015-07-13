@@ -22,18 +22,19 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-#include <sys/ioctl.h>
+
 #include <fcntl.h>
 #include <termios.h>
 #include <net/if.h>
-#include <linux/types.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <linux/types.h>
 #include <unistd.h>
 #include <err.h>
 #include <signal.h>
 #include <ctype.h>
+
 /**
 *	gsmmux.h provides n_gsm line dicipline structures and functions.
 *	It should be kept in sync with your kernel release.
@@ -417,7 +418,7 @@ int main(int argc, char **argv) {
 	if (tcgetattr(serial_fd, &tio) == -1)
 		err(EXIT_FAILURE, "Cannot get line attributes");
 
-	/* set the new attrbiutes */
+	/* set the new attributes */
 	tio.c_iflag = 0;
 	tio.c_oflag = 0;
 	tio.c_cflag = CS8 | CREAD | CLOCAL;
@@ -490,7 +491,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (ioctl(serial_fd, TIOCSETD, &ldisc) < 0)
-		err(EXIT_FAILURE, "Cannot set line dicipline. Is 'n_gsm' module registred?");
+		err(EXIT_FAILURE, "Cannot set line discipline. Is 'n_gsm' module registered?");
 
 	/* get n_gsm configuration */
 	if (ioctl(serial_fd, GSMIOC_GETCONF, &gsm) < 0)
