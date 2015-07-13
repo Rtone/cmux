@@ -134,14 +134,16 @@ int send_at_command(int serial_fd, char *command) {
 
 	/* if we have a result and want debug info, strip CR & LF out from the output */
 	if (g_debug) {
-		int i;
-		char bufp[SIZE_BUF];
-		memcpy(bufp, buf, sizeof(buf));
-		for (i=0; i<strlen(bufp); i++) {
-			if (bufp[i] == '\r' || bufp[i] == '\n')
+		unsigned int i;
+		char bufp[sizeof(buf)+40];
+		memset(bufp, 0, sizeof(bufp));
+		snprintf(bufp, sizeof(bufp), "%s => %s", command, buf);
+
+		for(i=0; i<strlen(bufp); i++) {
+			if (bufp[i] < ' ')
 				bufp[i] = ' ';
 		}
-		dbg("%s\t: %s", command, bufp);
+		dbg("%s", bufp);
 	}
 
 	/* if the output shows "OK" return success */
