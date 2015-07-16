@@ -27,7 +27,7 @@ How to
 $ ./cmux -h
 Usage: cmux --device /dev/ttyUSB0 --speed 115200
 
---gsm <type>	SIM900, TELIT or default. (Default: default)
+--type <type>	SIM900, TELIT or default. (Default: default)
 --device <name>	Serial device name. (Default: /dev/ttyUSB0)
 --speed <rate>	Serial device line speed. (Default: 115200)
 --mtu <number>	MTU size. (Default: 512)

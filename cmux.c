@@ -54,7 +54,7 @@
  /* size of the reception buffer which gets data from the serial line */
 #define SIZE_BUF	256
 
-char *g_gsm = "default";
+char *g_type = "default";
 
 /* number of virtual TTYs to create (most modems can handle up to 4) */
 int g_nodes = 1;
@@ -299,7 +299,7 @@ int handle_number_arg(char **args, int *val, const char *opt) {
 void print_help() {
 	printf(
 		"Usage: cmux --device /dev/ttyUSB0 --speed 115200\n\n"
-		"--gsm <type>	SIM900, TELIT or default. (Default: %s)\n"
+		"--type <type>	SIM900, TELIT or default. (Default: %s)\n"
 		"--device <name>	Serial device name. (Default: %s)\n"
 		"--speed <rate>	Serial device line speed. (Default: %d)\n"
 		"--mtu <number>	MTU size. (Default: %d)\n"
@@ -309,7 +309,7 @@ void print_help() {
 		"--base <name>	Base name for the nodes. (Default: %s)\n"
 		"--nodes [0-4]	Number of nodes to create. (Default: %d)\n"
 		"\n",
-		g_gsm, g_device, g_speed, g_mtu, g_debug,
+		g_type, g_device, g_speed, g_mtu, g_debug,
 		g_daemon, g_driver, g_base, g_nodes
 	);
 }
@@ -358,7 +358,7 @@ int main(int argc, char **argv) {
 			return 0;
 		}
 
-		if (handle_string_arg(args, &g_gsm, "--gsm")
+		if (handle_string_arg(args, &g_type, "--type")
 			|| handle_string_arg(args, &g_device, "--device")
 			|| handle_number_arg(args, &g_speed, "--speed")
 			|| handle_number_arg(args, &g_mtu, "--mtu")
@@ -374,10 +374,10 @@ int main(int argc, char **argv) {
 	};
 
 	speed = to_line_speed(g_speed);
-	g_gsm = to_lower(g_gsm);
+	g_type = to_lower(g_type);
 
-	if (strcmp(g_gsm, "default") && strcmp(g_gsm, "sim900") && strcmp(g_gsm, "telit"))
-		errx(EXIT_FAILURE, "Invalid value for --gsm: %s", g_gsm);
+	if (strcmp(g_type, "default") && strcmp(g_type, "sim900") && strcmp(g_type, "telit"))
+		errx(EXIT_FAILURE, "Invalid value for --type: %s", g_type);
 
 	if (g_daemon != 0 && g_daemon != 1)
 		errx(EXIT_FAILURE, "Invalid value for --daemon: %d", g_daemon);
@@ -388,7 +388,7 @@ int main(int argc, char **argv) {
 	if (g_nodes > 4)
 		errx(EXIT_FAILURE, "Invalid value for --nodes: %d", g_nodes);
 
-	if (match(g_gsm, "sim900")) {
+	if (match(g_type, "sim900")) {
 		g_mtu = 255;
 	} else {
 		g_mtu = 512;
@@ -396,7 +396,7 @@ int main(int argc, char **argv) {
 
 	/* print global parameters */
 	dbg(
-		"gsm: %s\n"
+		"type: %s\n"
 		"device: %s\n"
 		"speed: %d\n"
 		"mtu: %d\n"
@@ -405,7 +405,7 @@ int main(int argc, char **argv) {
 		"driver: %s\n"
 		"base: %s\n"
 		"nodes: %d\n",
-		g_gsm, g_device, g_speed, g_mtu, g_debug,
+		g_type, g_device, g_speed, g_mtu, g_debug,
 		g_daemon, g_driver, g_nodes ? g_base : "disabled", g_nodes
 	);
 
@@ -442,12 +442,12 @@ int main(int argc, char **argv) {
 	*	The following matches Quectel M95.
 	*/
 
-	if (match(g_gsm, "sim900")) {
+	if (match(g_type, "sim900")) {
 		if (send_at_command(serial_fd, "AAAT\r") == -1)
 			errx(EXIT_FAILURE, "AAAAT: bad response");
 	}
 
-	if (match(g_gsm, "telit")) {
+	if (match(g_type, "telit")) {
 		if (send_at_command(serial_fd, "AT#SELINT=2\r") == -1)
 			errx(EXIT_FAILURE, "AT#SELINT=2: bad response");
 
@@ -472,7 +472,7 @@ int main(int argc, char **argv) {
 		if (send_at_command(serial_fd, "AT\r") == -1)
 			warnx("AT: bad response");
 
-		if (!match(g_gsm, "sim900")) {
+		if (!match(g_type, "sim900")) {
 			sprintf(atcommand, "AT+IPR=%d&w\r", g_speed);
 			if (send_at_command(serial_fd, atcommand) == -1)
 				errx(EXIT_FAILURE, "AT+IPR=%d&w: bad response", g_speed);
@@ -484,7 +484,7 @@ int main(int argc, char **argv) {
 	}
 
 	/* use n_gsm line discipline */
-	if (match(g_gsm, "sim900")) {
+	if (match(g_type, "sim900")) {
 		sleep(0.1);
 	} else {
 		sleep(2);
