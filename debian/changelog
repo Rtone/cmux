@@ -4,6 +4,8 @@ cmux (1.2) stable; urgency=medium
   * make Makefile cross compiler aware
   * add support for TELIT modules
 
+ -- Moritz Warning <moritzwarning@web.de>  Sat, 08 Aug 2015 21:49:07 +0300
+
 cmux (1.1) stable; urgency=medium
 
   * fix MTU setting. MTU set to 255 (maximum allowed for SIM900)
