@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <err.h>
 #include <signal.h>
+#include <sys/sysmacros.h> //for makedev function
 /** 
 *	gsmmux.h provides n_gsm line dicipline structures and functions. 
 *	It should be kept in sync with your kernel release.
