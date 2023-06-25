@@ -34,6 +34,7 @@
 #include <err.h>
 #include <signal.h>
 #include <ctype.h>
+#include <sys/sysmacros.h>
 
 /**
 *	gsmmux.h provides n_gsm line dicipline structures and functions.
@@ -85,7 +86,7 @@ char *g_device = "/dev/ttyUSB0";
 /* line speed */
 int g_speed = 115200;
 
-/* maximum transfert unit (MTU), value in bytes */
+/* maximum transfer unit (MTU), value in bytes */
 int g_mtu = 512;
 
 /**
