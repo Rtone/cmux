@@ -1,0 +1,25 @@
+cmux (1.2) stable; urgency=medium
+
+  * most options are configurable now
+  * make Makefile cross compiler aware
+  * add support for TELIT modules
+
+ -- Moritz Warning <moritzwarning@web.de>  Sat, 08 Aug 2015 21:49:07 +0300
+
+cmux (1.1) stable; urgency=medium
+
+  * fix MTU setting. MTU set to 255 (maximum allowed for SIM900)
+
+ -- Evgeny Boger <boger@contactless.ru>  Thu, 19 Feb 2015 21:03:32 +0300
+
+cmux (1.0) stable; urgency=medium
+
+  * Initial release. (https://github.com/contactless/cmux/)
+
+ -- Evgeny Boger <boger@contactless.ru>  Sat, 20 Sep 2014 04:29:51 +0400
+
+cmux (0.1) stable; urgency=medium
+
+* Initial code base. (https://github.com/Rtone/cmux)
+
+ -- Nicolas Le Manchet <nicolaslm@rtone.fr>

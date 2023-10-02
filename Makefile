@@ -1,12 +1,16 @@
-CC=gcc
-CFLAGS=-Wall
 
-all: cmux
+CC?=gcc
+CFLAGS?=-Wall
+DESTDIR?=/
+PREFIX?=usr
 
-program: cmux.c
+cmux: cmux.c
+	$(CC) $(CFLAGS) cmux.c -o cmux
+
+install: cmux
+	install -m 0755 cmux $(DESTDIR)/$(PREFIX)/bin/cmux
 
 clean:
-	rm -f cmux
+	-@rm cmux
 
-run: cmux
-	./cmux
+.PHONY: install clean
